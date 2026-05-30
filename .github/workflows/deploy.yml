@@ -32,8 +32,6 @@ jobs:
         env:
           # basePath = "/<nazwa-repo>" dla project page (np. /handscript)
           NEXT_PUBLIC_BASE_PATH: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) && '' || format('/{0}', github.event.repository.name) }}
-          # Wbudowany klucz Gemini — z GitHub Secret (gh secret set GEMINI_KEY)
-          NEXT_PUBLIC_GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
         run: npm run build
 
       - name: Disable Jekyll

@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import { transcribe, type Engine, type Keys } from "./lib/transcribe";
+import { BUILTIN_GEMINI_KEY, BUILTIN_CLAUDE_KEY } from "./config";
 
 interface Page {
   id: string;
@@ -18,13 +19,13 @@ const ENGINES: { id: Engine; label: string; hint: string }[] = [
   { id: "ollama", label: "Ollama (lokalnie)", hint: "offline · M4" },
 ];
 
-// Domyślny klucz Gemini wstrzykiwany przy buildzie (GitHub Secret).
-// Pozwala udostępnić aplikację innym bez wpisywania klucza.
-const BUILTIN_GEMINI = process.env.NEXT_PUBLIC_GEMINI_KEY ?? "";
+// Wbudowane klucze z app/config.ts — pozwalają udostępnić aplikację
+// innym bez wpisywania klucza.
+const BUILTIN_GEMINI = BUILTIN_GEMINI_KEY;
 
 const DEFAULT_KEYS: Keys = {
-  gemini: BUILTIN_GEMINI,
-  claude: "",
+  gemini: BUILTIN_GEMINI_KEY,
+  claude: BUILTIN_CLAUDE_KEY,
   ollamaHost: "http://localhost:11434",
   ollamaModel: "qwen2.5vl:7b",
 };
