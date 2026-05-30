@@ -39,6 +39,7 @@ export default function Home() {
   const [engine, setEngine] = useState<Engine>("gemini");
   const [keys, setKeys] = useState<Keys>(DEFAULT_KEYS);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<"image" | "text">("image");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Wczytaj klucze z localStorage przy starcie
@@ -74,6 +75,7 @@ export default function Home() {
     }));
     setPages((prev) => [...prev, ...newPages]);
     setSelectedId(newPages[0].id);
+    setMobileView("image");
   }, []);
 
   const transcribePage = useCallback(async (page: Page) => {
@@ -155,17 +157,17 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      <header className="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">HandScript</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">Transkrypcja pisma odręcznego · Claude Vision</p>
+    <div className="h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+      <header className="border-b border-zinc-800 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">HandScript</h1>
+          <p className="hidden sm:block text-xs text-zinc-500 mt-0.5">Transkrypcja pisma odręcznego · Claude Vision</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-1.5 sm:gap-2 items-center flex-1 sm:flex-none justify-end">
           <select
             value={engine}
             onChange={(e) => setEngine(e.target.value as Engine)}
-            className="px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500 cursor-pointer"
+            className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[8rem] sm:max-w-none truncate"
             title={ENGINES.find((e) => e.id === engine)?.hint}
           >
             {ENGINES.map((e) => (
@@ -177,20 +179,21 @@ export default function Home() {
           <button
             onClick={transcribeAll}
             disabled={pages.length === 0 || pages.every((p) => p.status === "done" || p.status === "loading")}
-            className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap"
           >
-            Transkrybuj wszystkie
+            <span className="hidden sm:inline">Transkrybuj wszystkie</span>
+            <span className="sm:hidden">Wszystkie</span>
           </button>
           <button
             onClick={exportPDF}
             disabled={pages.length === 0}
-            className="px-4 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap"
           >
-            Pobierz PDF
+            PDF
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="relative px-3 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors"
+            className="relative px-3 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors shrink-0"
             title="Ustawienia kluczy API"
           >
             ⚙︎
@@ -201,10 +204,11 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - 65px)" }}>
-        <aside className="w-56 border-r border-zinc-800 flex flex-col overflow-y-auto">
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0">
+        {/* Pasek miniatur: poziomy na mobile, pionowy na desktopie */}
+        <aside className="flex md:flex-col md:w-56 border-b md:border-b-0 md:border-r border-zinc-800 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto shrink-0">
           <div
-            className={`m-3 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
+            className={`m-2 md:m-3 shrink-0 w-28 md:w-auto flex items-center justify-center border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
               dragging ? "border-indigo-500 bg-indigo-950/30" : "border-zinc-700 hover:border-zinc-500"
             }`}
             onClick={() => fileInputRef.current?.click()}
@@ -212,7 +216,7 @@ export default function Home() {
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
           >
-            <p className="text-xs text-zinc-400">Przeciągnij obrazy<br />lub kliknij</p>
+            <p className="text-xs text-zinc-400">+ Dodaj<span className="hidden md:inline"> obrazy</span></p>
           </div>
           <input
             ref={fileInputRef}
@@ -223,19 +227,19 @@ export default function Home() {
             onChange={(e) => e.target.files && addFiles(e.target.files)}
           />
 
-          <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
+          <div className="flex md:flex-col md:flex-1 md:overflow-y-auto gap-1 p-2 md:px-2">
             {pages.map((page, i) => (
               <button
                 key={page.id}
                 onClick={() => setSelectedId(page.id)}
-                className={`w-full text-left rounded-lg overflow-hidden border transition-colors ${
+                className={`shrink-0 w-28 md:w-full text-left rounded-lg overflow-hidden border transition-colors ${
                   selectedId === page.id
                     ? "border-indigo-500 bg-zinc-800"
                     : "border-zinc-800 hover:border-zinc-600 bg-zinc-900"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={page.imageUrl} alt="" className="w-full h-24 object-cover" />
+                <img src={page.imageUrl} alt="" className="w-full h-16 md:h-24 object-cover" />
                 <div className="px-2 py-1.5 flex items-center justify-between">
                   <span className="text-xs text-zinc-400 truncate">Str. {i + 1}</span>
                   <StatusDot status={page.status} />
@@ -245,16 +249,40 @@ export default function Home() {
           </div>
         </aside>
 
-        <main className="flex-1 flex overflow-hidden">
+        <main className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
           {selectedPage ? (
             <>
-              <div className="flex-1 bg-zinc-900 overflow-auto flex items-start justify-center p-6">
+              {/* Przełącznik widoku (tylko mobile) */}
+              <div className="md:hidden flex border-b border-zinc-800 shrink-0">
+                <button
+                  onClick={() => setMobileView("image")}
+                  className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                    mobileView === "image" ? "text-indigo-400 border-b-2 border-indigo-500" : "text-zinc-500"
+                  }`}
+                >
+                  Obraz
+                </button>
+                <button
+                  onClick={() => setMobileView("text")}
+                  className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                    mobileView === "text" ? "text-indigo-400 border-b-2 border-indigo-500" : "text-zinc-500"
+                  }`}
+                >
+                  Tekst
+                </button>
+              </div>
+
+              <div
+                className={`${mobileView === "image" ? "flex" : "hidden"} md:flex flex-1 bg-zinc-900 overflow-auto items-start justify-center p-3 sm:p-6 min-h-0`}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={selectedPage.imageUrl} alt="Strona" className="max-w-full shadow-2xl rounded" />
               </div>
 
-              <div className="w-96 border-l border-zinc-800 flex flex-col">
-                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+              <div
+                className={`${mobileView === "text" ? "flex" : "hidden"} md:flex w-full md:w-96 border-t md:border-t-0 md:border-l border-zinc-800 flex-col min-h-0 flex-1 md:flex-none`}
+              >
+                <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between shrink-0">
                   <span className="text-sm font-medium">Transkrypcja</span>
                   <button
                     onClick={() => transcribePage(selectedPage)}
@@ -269,7 +297,7 @@ export default function Home() {
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-center space-y-3">
                       <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-xs text-zinc-500">Claude czyta pismo…</p>
+                      <p className="text-xs text-zinc-500">Czytam pismo…</p>
                     </div>
                   </div>
                 ) : (
@@ -289,7 +317,7 @@ export default function Home() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-zinc-600">
+            <div className="flex-1 flex items-center justify-center text-zinc-600 p-6">
               <div className="text-center space-y-2">
                 <p className="text-4xl">✍️</p>
                 <p className="text-sm">Dodaj obrazy z pismem odręcznym</p>
@@ -328,7 +356,7 @@ function SettingsModal({
       onClick={onClose}
     >
       <div
-        className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md p-6 space-y-5"
+        className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md p-5 sm:p-6 space-y-5 max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
