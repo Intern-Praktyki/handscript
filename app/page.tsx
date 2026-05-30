@@ -18,8 +18,12 @@ const ENGINES: { id: Engine; label: string; hint: string }[] = [
   { id: "ollama", label: "Ollama (lokalnie)", hint: "offline · M4" },
 ];
 
+// Domyślny klucz Gemini wstrzykiwany przy buildzie (GitHub Secret).
+// Pozwala udostępnić aplikację innym bez wpisywania klucza.
+const BUILTIN_GEMINI = process.env.NEXT_PUBLIC_GEMINI_KEY ?? "";
+
 const DEFAULT_KEYS: Keys = {
-  gemini: "",
+  gemini: BUILTIN_GEMINI,
   claude: "",
   ollamaHost: "http://localhost:11434",
   ollamaModel: "qwen2.5vl:7b",
@@ -40,7 +44,13 @@ export default function Home() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setKeys({ ...DEFAULT_KEYS, ...JSON.parse(saved) });
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const merged = { ...DEFAULT_KEYS, ...parsed };
+        // Pusty zapis nie może skasować wbudowanego klucza
+        if (!merged.gemini) merged.gemini = BUILTIN_GEMINI;
+        setKeys(merged);
+      }
     } catch {}
   }, []);
 
