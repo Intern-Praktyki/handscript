@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "handscript",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/shopin/Desktop/handscript",
+      "autoPort": true,
+      "port": 3000
+    }
+  ]
+}
