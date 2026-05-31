@@ -10,7 +10,10 @@
 // │  HTTP referrer na Twoją domenę.                              │
 // └─────────────────────────────────────────────────────────────┘
 
-export const BUILTIN_GEMINI_KEY = "AIzaSyBGZy4FBEF7wBXtlrvg6I25JrqQuR5eXOI";
+// Pusty w kodzie — prawdziwy klucz wstrzykiwany z GitHub Secret przy buildzie
+// (zmienna NEXT_PUBLIC_GEMINI_KEY). Dzięki temu nie trafia do publicznego repo
+// i Google go nie unieważnia.
+export const BUILTIN_GEMINI_KEY = process.env.NEXT_PUBLIC_GEMINI_KEY ?? "";
 
 // Opcjonalnie: wbudowany klucz Claude (zostaw pusty jeśli nie używasz)
 export const BUILTIN_CLAUDE_KEY = "";
