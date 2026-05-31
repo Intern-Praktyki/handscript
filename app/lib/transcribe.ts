@@ -29,13 +29,15 @@ async function gemini(image: string, keys: Keys): Promise<string> {
   if (!p) return "[Błąd: nieprawidłowy format obrazu]";
   if (!keys.gemini) return "[Brak klucza Gemini — dodaj go w Ustawieniach]";
 
+  // Klucz w query param (nie w nagłówku) — unika CORS preflight w przeglądarce.
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(
+      keys.gemini
+    )}`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": keys.gemini,
       },
       body: JSON.stringify({
         contents: [
