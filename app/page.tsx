@@ -13,53 +13,27 @@ interface Page {
   status: "idle" | "loading" | "done" | "error";
 }
 
-const ENGINES: { id: Engine; label: string; hint: string }[] = [
-  { id: "gemini", label: "Gemini 2.5 Flash", hint: "darmowy · 250/dzień" },
-  { id: "claude", label: "Claude Sonnet", hint: "premium · ~5 gr/str" },
-  { id: "ollama", label: "Ollama (lokalnie)", hint: "offline · M4" },
-];
-
-// Wbudowane klucze z app/config.ts — pozwalają udostępnić aplikację
-// innym bez wpisywania klucza.
-const BUILTIN_GEMINI = BUILTIN_GEMINI_KEY;
-
-const DEFAULT_KEYS: Keys = {
+// Zawsze używamy aktualnego, wbudowanego klucza — bez ustawień, bez localStorage.
+const engine: Engine = "gemini";
+const keys: Keys = {
   gemini: BUILTIN_GEMINI_KEY,
   claude: BUILTIN_CLAUDE_KEY,
   ollamaHost: "http://localhost:11434",
   ollamaModel: "qwen2.5vl:7b",
 };
 
-const STORAGE_KEY = "handscript_keys";
-
 export default function Home() {
   const [pages, setPages] = useState<Page[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [engine, setEngine] = useState<Engine>("gemini");
-  const [keys, setKeys] = useState<Keys>(DEFAULT_KEYS);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileView, setMobileView] = useState<"image" | "text">("image");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Wczytaj klucze z localStorage przy starcie
+  // Wyczyść ewentualny stary klucz zapisany kiedyś w przeglądarce,
+  // żeby na pewno korzystać z aktualnego wbudowanego klucza.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const merged = { ...DEFAULT_KEYS, ...parsed };
-        // Pusty zapis nie może skasować wbudowanego klucza
-        if (!merged.gemini) merged.gemini = BUILTIN_GEMINI;
-        setKeys(merged);
-      }
-    } catch {}
-  }, []);
-
-  const saveKeys = useCallback((next: Keys) => {
-    setKeys(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.removeItem("handscript_keys");
     } catch {}
   }, []);
 
@@ -100,7 +74,7 @@ export default function Home() {
         )
       );
     }
-  }, [engine, keys]);
+  }, []);
 
   const transcribeAll = useCallback(async () => {
     const todo = pages.filter((p) => p.status === "idle" || p.status === "error");
@@ -147,8 +121,6 @@ export default function Home() {
   }, [pages]);
 
   const selectedPage = pages.find((p) => p.id === selectedId) ?? null;
-  const missingKey =
-    (engine === "gemini" && !keys.gemini) || (engine === "claude" && !keys.claude);
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -178,16 +150,6 @@ export default function Home() {
             className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors whitespace-nowrap"
           >
             PDF
-          </button>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            className="relative px-3 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors shrink-0"
-            title="Ustawienia kluczy API"
-          >
-            ⚙︎
-            {missingKey && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-zinc-950" />
-            )}
           </button>
         </div>
       </header>
@@ -313,148 +275,6 @@ export default function Home() {
             </div>
           )}
         </main>
-      </div>
-
-      {settingsOpen && (
-        <SettingsModal
-          keys={keys}
-          engine={engine}
-          onEngineChange={setEngine}
-          onSave={saveKeys}
-          onClose={() => setSettingsOpen(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-function SettingsModal({
-  keys,
-  engine,
-  onEngineChange,
-  onSave,
-  onClose,
-}: {
-  keys: Keys;
-  engine: Engine;
-  onEngineChange: (e: Engine) => void;
-  onSave: (k: Keys) => void;
-  onClose: () => void;
-}) {
-  const [draft, setDraft] = useState<Keys>(keys);
-  const set = (k: keyof Keys, v: string) => setDraft((d) => ({ ...d, [k]: v }));
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-zinc-900 border border-zinc-700 rounded-xl w-full max-w-md p-5 sm:p-6 space-y-5 max-h-[90dvh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div>
-          <h2 className="text-lg font-semibold">Ustawienia · Klucze API</h2>
-          <p className="text-xs text-zinc-500 mt-1">
-            Klucze są przechowywane tylko w Twojej przeglądarce (localStorage) i
-            wysyłane wyłącznie do wybranego silnika. Nigdy nie trafiają do repo.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium">Silnik transkrypcji</label>
-          <div className="grid grid-cols-1 gap-1.5">
-            {ENGINES.map((e) => (
-              <button
-                key={e.id}
-                onClick={() => onEngineChange(e.id)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left transition-colors ${
-                  engine === e.id
-                    ? "border-indigo-500 bg-indigo-950/40"
-                    : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
-                }`}
-              >
-                <span className="text-sm">{e.label}</span>
-                <span className="text-xs text-zinc-500">{e.hint}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Gemini API key</label>
-          <input
-            type="password"
-            value={draft.gemini}
-            onChange={(e) => set("gemini", e.target.value)}
-            placeholder="AIza..."
-            className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500"
-          />
-          <a
-            href="https://aistudio.google.com/apikey"
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-indigo-400 hover:underline"
-          >
-            Pobierz darmowy klucz →
-          </a>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Claude (Anthropic) API key</label>
-          <input
-            type="password"
-            value={draft.claude}
-            onChange={(e) => set("claude", e.target.value)}
-            placeholder="sk-ant-..."
-            className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500"
-          />
-          <a
-            href="https://console.anthropic.com/settings/keys"
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-indigo-400 hover:underline"
-          >
-            Pobierz klucz →
-          </a>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Ollama host</label>
-            <input
-              value={draft.ollamaHost}
-              onChange={(e) => set("ollamaHost", e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Ollama model</label>
-            <input
-              value={draft.ollamaModel}
-              onChange={(e) => set("ollamaModel", e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-          >
-            Anuluj
-          </button>
-          <button
-            onClick={() => {
-              onSave(draft);
-              onClose();
-            }}
-            className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors"
-          >
-            Zapisz
-          </button>
-        </div>
       </div>
     </div>
   );
