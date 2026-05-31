@@ -10,14 +10,19 @@ export interface Keys {
   ollamaModel: string;
 }
 
-export const PROMPT = `Transkrybuj dokładnie całe pismo odręczne widoczne na tym obrazie.
-Zasady:
+export const PROMPT = `Jesteś ekspertem paleografem specjalizującym się w odczytywaniu trudnego, nieczytelnego pisma odręcznego po polsku.
+
+Przeanalizuj obraz BARDZO uważnie, litera po literze. Pracuj metodycznie:
+1. Najpierw rozpoznaj ogólny charakter pisma i kontekst (o czym jest tekst).
+2. Odczytuj słowo po słowie. Przy trudnych słowach analizuj kształt każdej litery, łączenia, i używaj kontekstu zdania oraz zasad polskiej gramatyki, by ustalić najbardziej prawdopodobne słowo.
+3. Wykorzystuj sens całości — jeśli słowo pasuje logicznie do zdania, to prawdopodobnie ono.
+
+Zasady wyniku:
 - Zachowaj oryginalny układ akapitów i podziały wierszy
-- Jeśli jakieś słowo jest nieczytelne, wstaw [?] i spróbuj podać najbardziej prawdopodobną wersję w nawiasie
-- Nie dodawaj żadnych komentarzy ani wyjaśnień — tylko sam tekst
-- Jeśli widoczne są liczby, daty, przekreślenia — uwzględnij je
-- Tekst jest po polsku, zadbaj o poprawne polskie znaki (ą, ć, ę, ł, ń, ó, ś, ż, ź)
-- Odpowiedz wyłącznie transkrypcją`;
+- Tekst jest po polsku — zadbaj o poprawne polskie znaki (ą, ć, ę, ł, ń, ó, ś, ż, ź) i poprawną gramatykę
+- Uwzględnij liczby, daty, przekreślenia
+- Tylko jeśli słowo jest naprawdę niemożliwe do odczytania, oznacz je [?]
+- Nie dodawaj żadnych komentarzy, nagłówków ani wyjaśnień — zwróć WYŁĄCZNIE samą transkrypcję tekstu`;
 
 function parseImage(dataUrl: string): { mediaType: string; data: string } | null {
   const m = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -48,6 +53,11 @@ async function gemini(image: string, keys: Keys): Promise<string> {
             ],
           },
         ],
+        generationConfig: {
+          temperature: 0, // maksymalna wierność, bez zgadywania na chybił trafił
+          // Pełne "myślenie" modelu — wyraźnie poprawia trudne pismo
+          thinkingConfig: { thinkingBudget: 8192 },
+        },
       }),
     }
   );
