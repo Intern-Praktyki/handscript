@@ -164,18 +164,6 @@ export default function Home() {
           <p className="hidden sm:block text-xs text-zinc-500 mt-0.5">Transkrypcja pisma odręcznego · Claude Vision</p>
         </div>
         <div className="flex gap-1.5 sm:gap-2 items-center flex-1 sm:flex-none justify-end">
-          <select
-            value={engine}
-            onChange={(e) => setEngine(e.target.value as Engine)}
-            className="px-2 sm:px-3 py-2 text-xs sm:text-sm bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[8rem] sm:max-w-none truncate"
-            title={ENGINES.find((e) => e.id === engine)?.hint}
-          >
-            {ENGINES.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.label} — {e.hint}
-              </option>
-            ))}
-          </select>
           <button
             onClick={transcribeAll}
             disabled={pages.length === 0 || pages.every((p) => p.status === "done" || p.status === "loading")}
@@ -330,6 +318,8 @@ export default function Home() {
       {settingsOpen && (
         <SettingsModal
           keys={keys}
+          engine={engine}
+          onEngineChange={setEngine}
           onSave={saveKeys}
           onClose={() => setSettingsOpen(false)}
         />
@@ -340,10 +330,14 @@ export default function Home() {
 
 function SettingsModal({
   keys,
+  engine,
+  onEngineChange,
   onSave,
   onClose,
 }: {
   keys: Keys;
+  engine: Engine;
+  onEngineChange: (e: Engine) => void;
   onSave: (k: Keys) => void;
   onClose: () => void;
 }) {
@@ -365,6 +359,26 @@ function SettingsModal({
             Klucze są przechowywane tylko w Twojej przeglądarce (localStorage) i
             wysyłane wyłącznie do wybranego silnika. Nigdy nie trafiają do repo.
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Silnik transkrypcji</label>
+          <div className="grid grid-cols-1 gap-1.5">
+            {ENGINES.map((e) => (
+              <button
+                key={e.id}
+                onClick={() => onEngineChange(e.id)}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg border text-left transition-colors ${
+                  engine === e.id
+                    ? "border-indigo-500 bg-indigo-950/40"
+                    : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
+                }`}
+              >
+                <span className="text-sm">{e.label}</span>
+                <span className="text-xs text-zinc-500">{e.hint}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-1">
